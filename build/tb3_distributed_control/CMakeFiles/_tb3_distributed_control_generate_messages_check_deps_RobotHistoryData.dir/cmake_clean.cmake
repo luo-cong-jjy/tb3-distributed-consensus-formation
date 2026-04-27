@@ -1,8 +1,0 @@
-file(REMOVE_RECURSE
-  "CMakeFiles/_tb3_distributed_control_generate_messages_check_deps_RobotHistoryData"
-)
-
-# Per-language clean rules from dependency scanning.
-foreach(lang )
-  include(CMakeFiles/_tb3_distributed_control_generate_messages_check_deps_RobotHistoryData.dir/cmake_clean_${lang}.cmake OPTIONAL)
-endforeach()

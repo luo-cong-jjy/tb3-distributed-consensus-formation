@@ -1,2 +1,0 @@
-set(tb3_distributed_control_MESSAGE_FILES "/home/gdut/24_LC/turtlebot3_distributed_consensus_formation_ws/src/tb3_distributed_control/msg/LeaderHistoryData.msg;/home/gdut/24_LC/turtlebot3_distributed_consensus_formation_ws/src/tb3_distributed_control/msg/RobotHistoryData.msg")
-set(tb3_distributed_control_SERVICE_FILES "")

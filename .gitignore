@@ -1,0 +1,32 @@
+# ROS / catkin generated files
+/build/
+/devel/
+/install/
+/logs/
+/.catkin_tools/
+/.catkin_workspace
+
+# Python caches and virtual env
+__pycache__/
+*.py[cod]
+*.so
+.venv/
+venv/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Experiment generated outputs
+/仿真&实物实验实验数据论文结果图绘制包/output_odometry/
+/仿真&实物实验实验数据论文结果图绘制包/output_redraw_results/
+/仿真&实物实验实验数据论文结果图绘制包/实验视频/
+
+# Large media and rosbag artifacts
+*.bag
+*.db3
+*.mp4
+*.avi
+*.mkv
