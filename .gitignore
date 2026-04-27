@@ -20,8 +20,8 @@ venv/
 Thumbs.db
 
 # Experiment generated outputs
-/仿真&实物实验实验数据论文结果图绘制包/output_odometry/
-/仿真&实物实验实验数据论文结果图绘制包/output_redraw_results/
+# /仿真&实物实验实验数据论文结果图绘制包/output_odometry/
+# /仿真&实物实验实验数据论文结果图绘制包/output_redraw_results/
 /仿真&实物实验实验数据论文结果图绘制包/实验视频/
 
 # Large media and rosbag artifacts
