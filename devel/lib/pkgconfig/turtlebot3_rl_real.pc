@@ -1,0 +1,8 @@
+prefix=/home/gdut/24_LC/turtlebot3_distributed_consensus_formation_ws/devel
+
+Name: turtlebot3_rl_real
+Description: Description of turtlebot3_rl_real
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

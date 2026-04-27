@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- 测试参数 -->
+    <arg name="robot_id" default="0" doc="要测试的机器人ID (0-4)"/>
+    <arg name="visualize" default="true" doc="是否发布可视化标记"/>
+    <arg name="verbose" default="false" doc="是否输出详细日志（会影响性能）"/>
+    <arg name="performance_interval" default="50" doc="每多少次扫描输出一次性能报告"/>
+    
+    <!-- 设置robot_description参数，从目标机器人命名空间读取 -->
+    <param name="robot_description" value="$(arg robot_id)" />
+    <rosparam command="load" file="$(find tb3_distributed_control)/config/$(arg robot_id)_description.yaml" ns="robot_description" if="false"/>
+    
+    <!-- 启动聚类分析测试节点 -->
+    <node pkg="tb3_distributed_control" 
+          type="test_clustering_analysis.py" 
+          name="clustering_analysis_tester_$(arg robot_id)" 
+          output="screen">
+        <param name="robot_id" value="$(arg robot_id)"/>
+        <param name="visualize" value="$(arg visualize)"/>
+        <param name="verbose" value="$(arg verbose)"/>
+        <param name="performance_interval" value="$(arg performance_interval)"/>
+    </node>
+    
+    <!-- 可选：启动RViz进行可视化（当visualize=true时） -->
+    <group if="$(arg visualize)">
+        <node pkg="rviz" 
+              type="rviz" 
+              name="clustering_rviz" 
+              args="-d $(find tb3_distributed_control)/laser/laser_data_cluster_analyse/version2/rviz/tb3_laser_data_cluster_analyse_simulation.rviz"
+              required="false"/>
+    </group>
+</launch>

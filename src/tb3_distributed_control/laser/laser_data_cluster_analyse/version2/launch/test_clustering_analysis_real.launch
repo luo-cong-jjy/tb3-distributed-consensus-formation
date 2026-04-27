@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- 测试参数 -->
+    <arg name="robot_id" default="0" doc="要测试的机器人ID (0-4)"/>
+    <arg name="visualize" default="true" doc="是否发布可视化标记"/>
+    <arg name="verbose" default="false" doc="是否输出详细日志（会影响性能）"/>
+    <arg name="performance_interval" default="50" doc="每多少次扫描输出一次性能报告"/>
+    <arg name="model" default="$(env TURTLEBOT3_MODEL)" doc="机器人模型 (burger/waffle/waffle_pi)"/>
+    
+    <!-- 🤖 加载TurtleBot3机器人描述到机器人命名空间（实物机器人必需） -->
+    <param name="/tb3_$(arg robot_id)/robot_description" command="$(find xacro)/xacro $(find turtlebot3_description)/urdf/turtlebot3_$(arg model).urdf.xacro" />
+    
+    <!-- 🔧 启动robot_state_publisher发布TF变换（实物机器人必需） -->
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher_$(arg robot_id)" ns="tb3_$(arg robot_id)">
+        <param name="publish_frequency" type="double" value="50.0" />
+        <param name="tf_prefix" value="tb3_$(arg robot_id)" />
+    </node>
+    
+    <!-- 🔧 启动静态TF发布器：odom -> tb3_X/odom（用于RViz显示） -->
+    <node pkg="tf" type="static_transform_publisher" name="odom_to_namespace_odom" 
+          args="0 0 0 0 0 0 odom tb3_$(arg robot_id)/odom 100" />
+    
+    <!-- 启动聚类分析测试节点 -->
+    <node pkg="tb3_distributed_control" 
+          type="test_clustering_analysis_real.py" 
+          name="clustering_analysis_tester_$(arg robot_id)" 
+          output="screen">
+        <param name="robot_id" value="$(arg robot_id)"/>
+        <param name="visualize" value="$(arg visualize)"/>
+        <param name="verbose" value="$(arg verbose)"/>
+        <param name="performance_interval" value="$(arg performance_interval)"/>
+    </node>
+    
+    <!-- 可选：启动RViz进行可视化（当visualize=true时） -->
+    <group if="$(arg visualize)">
+        <node pkg="rviz" 
+              type="rviz" 
+              name="clustering_rviz" 
+              args="-d $(find tb3_distributed_control)/laser/laser_data_cluster_analyse/version2/rviz/tb3_laser_data_cluster_analyse.rviz"
+              required="false"/>
+    </group>
+</launch>

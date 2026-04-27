@@ -1,0 +1,192 @@
+<launch>
+  <!-- ============================================== -->
+  <!-- 分布式控制 - 主机端 Launch 文件 -->
+  <!-- 功能：运行虚拟领导者、可视化节点（在台式机上运行） -->
+  <!-- ============================================== -->
+
+  <!-- ============================================== -->
+  <!-- 1. 全局参数配置 -->
+  <!-- ============================================== -->
+  <!-- 实物实验使用系统时间（不使用仿真时间） -->
+  <param name="/use_sim_time" value="false" />
+  <!-- 日志级别配置 -->
+  <param name="/rosconsole/log_level" value="INFO" />
+
+  <!-- 机器人模型参数 -->
+  <arg name="model" default="$(env TURTLEBOT3_MODEL)" doc="model type [burger, waffle, waffle_pi]"/>
+  
+  <!-- 实物参数修改点1 -->
+  <!-- 系统总运行时间参数（可通过launch参数配置） -->
+  <arg name="total_time" default="32" doc="real_experiment_trajectory_line(实物轨迹_直线)-32s ; real_experiment_trajectory(实物轨迹_S形)-68s"/>
+  
+  <!-- 实物参数修改点2 -->
+  <!-- 轨迹类型参数（可通过launch参数配置） -->
+  <arg name="trajectory_type" default="real_experiment_trajectory_line" doc="Trajectory type: Trajectory type: real_experiment_trajectory_line(实物轨迹_直线),real_experiment_trajectory(实物轨迹_S形),"/>
+  
+  <!-- 实物机器人控制参数（主机端启用） -->
+  <arg name="enable_real_robot" default="false" doc="Enable real robot control"/>
+  <arg name="real_robot_name" default="tb3_real" doc="Real robot name for cmd_vel topic"/>
+  
+  <!-- RViz可视化参数 -->
+  <arg name="open_rviz" default="true" doc="Open RViz for visualization"/>
+  
+  <!-- 实物参数修改点4: RViz配置文件选择 -->
+  <!-- navigation: 导航版RViz（显示AMCL粒子云、move_base路径、costmap等，用于AMCL混合定位方案） -->
+  <!-- control:    纯编队控制RViz（仅显示机器人模型和编队轨迹，用于纯odom方案） -->
+  <arg name="rviz_config" default="navigation" doc="RViz config: navigation (with AMCL/move_base) or control (formation only)"/>
+  
+  <!-- 虚拟领导者命名空间参数 -->
+  <arg name="virtual_leader_ns" default="tb3_virtual_leader" doc="Virtual leader namespace"/>
+
+  <!-- ============================================== -->
+  <!-- 2. 注意：机器人端已发布完整TF树和robot_state_publisher -->
+  <!-- AMCL定位方案下，TF树由机器人端提供： -->
+  <!-- map -> (AMCL) -> odom -> base_footprint -> base_link -> base_scan -->
+  <!-- 主机端无需重复发布，仅提供地图服务和可视化 -->
+  <!-- ============================================== -->
+
+  <!-- ============================================== -->
+  <!-- 4. 可视化节点（延迟0.95秒启动） -->
+  <!-- ============================================== -->
+  <node name="result_visualizer" 
+        pkg="tb3_distributed_control" 
+        type="visualize_results.py" 
+        output="screen"
+        launch-prefix="bash -c 'sleep 0.90; $0 $@'">
+  </node>
+
+  <!-- ============================================== -->
+  <!-- 5. 虚拟领导者节点（延迟1秒启动） -->
+  <!-- ============================================== -->
+  <!-- 实物参数修改点3：领导者初始位置：直线：（-0.15，0.15，0.0） S形：（0.0，0.0，0.0） -->
+  <node name="leader_node" 
+        pkg="tb3_distributed_control" 
+        type="leader_node.py" 
+        output="screen"
+        launch-prefix="bash -c 'sleep 1.0; $0 $@'"
+        ns="$(arg virtual_leader_ns)">
+    <param name="total_time" value="$(arg total_time)"/> <!-- 传递总时间参数 -->
+    <param name="trajectory_type" value="$(arg trajectory_type)"/> <!-- 传递轨迹类型参数 -->
+    <param name="enable_real_robot" value="$(arg enable_real_robot)"/> <!-- 启用真实机器人控制 -->
+    <param name="real_robot_name" value="$(arg real_robot_name)"/> <!-- 真实机器人名称 -->
+    <param name="virtual_leader_ns" value="$(arg virtual_leader_ns)"/> <!-- 虚拟领导者命名空间 -->
+    <param name="~leader_init_x" value="-0.3"/> <!-- 领导者初始x -->
+    <param name="~leader_init_y" value="0.0"/> <!-- 领导者初始y -->
+    <param name="~leader_init_yaw" value="0.0"/> <!-- 领导者初始yaw -->
+  </node>
+
+  <!-- 6. 分布式控制可视化节点 -->
+  <node name="distributed_control_visualizer" 
+        pkg="tb3_distributed_control" 
+        type="distributed_control_visualizer.py" 
+        output="screen"
+        launch-prefix="bash -c 'sleep 1.5; $0 $@'">
+  </node>
+
+  <!-- ============================================== -->
+  <!-- 7. 地图服务器（仅navigation模式需要） -->
+  <!-- ============================================== -->
+  <group if="$(eval rviz_config == 'navigation')">
+    <arg name="map_file" default="$(find tb3_distributed_control)/maps/419_map_line.yaml"/>
+    <node pkg="map_server" name="map_server" type="map_server" args="$(arg map_file)">
+      <param name="frame_id" value="map"/>
+    </node>
+  </group>
+
+  <!-- ============================================== -->
+  <!-- 8. RViz 可视化（延迟2秒启动） -->
+  <!-- ============================================== -->
+  <group if="$(arg open_rviz)">
+    <!-- 导航版本RViz：显示AMCL粒子云、路径规划、costmap等 -->
+    <node name="rviz" 
+          pkg="rviz" 
+          type="rviz" 
+          args="-d $(find tb3_distributed_control)/rviz/multi_turtlebot3_navigation.rviz"
+          launch-prefix="bash -c 'sleep 2.0; $0 $@'"
+          output="screen"
+          if="$(eval rviz_config == 'navigation')" />
+    
+    <!-- 编队控制版本RViz：仅显示编队控制相关信息 -->
+    <node name="rviz" 
+          pkg="rviz" 
+          type="rviz" 
+          args="-d $(find tb3_distributed_control)/rviz/tb3_distributed_control.rviz"
+          launch-prefix="bash -c 'sleep 2.0; $0 $@'"
+          output="screen"
+          if="$(eval rviz_config == 'control')" />
+  </group>
+
+  <!-- ============================================== -->
+  <!-- 9. 运行状态提示 -->
+  <!-- ============================================== -->
+  <node name="launch_notification1" 
+        pkg="tb3_distributed_control"  
+        type="print_notification.py"   
+        output="screen">
+      <param name="~text" value="==============================================" />
+  </node>
+
+  <node name="launch_notification2" 
+        pkg="tb3_distributed_control" 
+        type="print_notification.py" 
+        output="screen">
+      <param name="~text" value="主机端节点启动成功！(Host Side)" />
+  </node>
+
+  <node name="launch_notification3" 
+        pkg="tb3_distributed_control" 
+        type="print_notification.py" 
+        output="screen">
+      <param name="~text" value="1. 已为5个机器人加载RViz显示模型（tb3_0~tb3_4）" />
+  </node>
+
+  <node name="launch_notification4" 
+        pkg="tb3_distributed_control" 
+        type="print_notification.py" 
+        output="screen">
+      <param name="~text" value="2. 虚拟领导者节点已启动" />
+  </node>
+
+  <node name="launch_notification5" 
+        pkg="tb3_distributed_control" 
+        type="print_notification.py" 
+        output="screen">
+      <param name="~text" value="3. 轨迹类型: $(arg trajectory_type)" />
+  </node>
+
+  <node name="launch_notification6" 
+        pkg="tb3_distributed_control" 
+        type="print_notification.py" 
+        output="screen">
+      <param name="~text" value="4. 程序运行 $(arg total_time) 秒后自动停止" />
+  </node>
+
+  <node name="launch_notification7" 
+        pkg="tb3_distributed_control" 
+        type="print_notification.py" 
+        output="screen">
+      <param name="~text" value="5. 请确保各机器人端已通过以下命令启动:" />
+  </node>
+
+  <node name="launch_notification8" 
+        pkg="tb3_distributed_control" 
+        type="print_notification.py" 
+        output="screen">
+      <param name="~text" value="   ROS_NAMESPACE=tb3_X roslaunch turtlebot3_bringup turtlebot3_robot.launch multi_robot_name:=tb3_X" />
+  </node>
+
+  <node name="launch_notification9" 
+        pkg="tb3_distributed_control" 
+        type="print_notification.py" 
+        output="screen">
+      <param name="~text" value="   roslaunch tb3_distributed_control distributed_robot_side.launch robot_id:=X" />
+  </node>
+
+  <node name="launch_notification10" 
+        pkg="tb3_distributed_control" 
+        type="print_notification.py" 
+        output="screen">
+      <param name="~text" value="==============================================" />
+  </node>
+
+</launch>

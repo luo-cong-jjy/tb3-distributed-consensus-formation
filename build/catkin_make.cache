@@ -1,0 +1,2 @@
+tb3_distributed_control:tb3_distributed_location
+-DCATKIN_DEVEL_PREFIX=/home/gdut/24_LC/turtlebot3_distributed_consensus_formation_ws/devel -DCMAKE_INSTALL_PREFIX=/home/gdut/24_LC/turtlebot3_distributed_consensus_formation_ws/install -G Unix Makefiles

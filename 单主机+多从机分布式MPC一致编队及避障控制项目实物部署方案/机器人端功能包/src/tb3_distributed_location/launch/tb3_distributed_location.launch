@@ -1,0 +1,36 @@
+<launch>
+  <!-- 参数定义 -->
+  <arg name="multi_robot_name" default=""/>
+  <arg name="set_lidar_frame_id" default="base_scan"/>
+  <arg name="model" default="$(env TURTLEBOT3_MODEL)" doc="model type [burger, waffle, waffle_pi]"/>
+  
+  <!-- 指定机器人初始全局位姿参数（map坐标系） -->
+  <arg name="tb3_x_pos" default="0.0" doc="Initial X position in map frame"/>
+  <arg name="tb3_y_pos" default="0.0" doc="Initial Y position in map frame"/>
+  <arg name="tb3_z_pos" default="0.0" doc="Initial yaw orientation in map frame"/>
+
+  <!-- 1. 启动机器人底盘驱动 -->
+  <include file="$(find turtlebot3_bringup)/launch/turtlebot3_robot.launch">
+    <arg name="multi_robot_name" value="$(arg multi_robot_name)"/>
+    <arg name="set_lidar_frame_id" value="$(arg multi_robot_name)/$(arg set_lidar_frame_id)"/>
+  </include>
+
+  <!-- 2. 启动导航栈（AMCL + move_base），传递初始位姿参数 -->
+  <include file="$(find tb3_distributed_location)/launch/multi_turtlebot3_navigation.launch">
+    <arg name="multi_robot_name" value="$(arg multi_robot_name)"/>
+    <arg name="tb3_x_pos" value="$(arg tb3_x_pos)"/>
+    <arg name="tb3_y_pos" value="$(arg tb3_y_pos)"/>
+    <arg name="tb3_z_pos" value="$(arg tb3_z_pos)"/>
+  </include>
+
+  <!-- 3. AMCL初始位姿设置与360度旋转校准（延迟1秒，确保AMCL已启动） -->
+  <!-- 直接通过命令行参数传递，效率最高，无需占用ROS参数服务器 -->
+  <node name="$(arg multi_robot_name)_initial_localization" 
+        pkg="tb3_distributed_location" 
+        type="turtlebot3_initial_localization.py" 
+        args="$(arg multi_robot_name) $(arg tb3_x_pos) $(arg tb3_y_pos) $(arg tb3_z_pos)"
+        output="screen"
+        launch-prefix="bash -c 'sleep 1.0; $0 $@'">
+  </node>
+ 
+</launch>

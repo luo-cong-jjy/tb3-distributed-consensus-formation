@@ -1,0 +1,88 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- 多机器人聚类分析测试 -->
+    <arg name="visualize" default="true" doc="是否发布可视化标记"/>
+    <arg name="verbose" default="false" doc="是否输出详细日志（会严重影响性能）"/>
+    <arg name="performance_interval" default="50" doc="每多少次扫描输出一次性能报告"/>
+    
+    <!-- 选择要测试的机器人 -->
+    <arg name="test_tb3_0" default="false"/>
+    <arg name="test_tb3_1" default="false"/>
+    <arg name="test_tb3_2" default="false"/>
+    <arg name="test_tb3_3" default="false"/>
+    <arg name="test_tb3_4" default="true"/>
+    
+    <!-- tb3_0 -->
+    <group if="$(arg test_tb3_0)">
+        <node pkg="tb3_distributed_control" 
+              type="test_clustering_analysis.py" 
+              name="clustering_tester_tb3_0" 
+              output="screen">
+            <param name="robot_id" value="0"/>
+            <param name="visualize" value="$(arg visualize)"/>
+            <param name="verbose" value="$(arg verbose)"/>
+            <param name="performance_interval" value="$(arg performance_interval)"/>
+        </node>
+    </group>
+    
+    <!-- tb3_1 -->
+    <group if="$(arg test_tb3_1)">
+        <node pkg="tb3_distributed_control" 
+              type="test_clustering_analysis.py" 
+              name="clustering_tester_tb3_1" 
+              output="screen">
+            <param name="robot_id" value="1"/>
+            <param name="visualize" value="$(arg visualize)"/>
+            <param name="verbose" value="$(arg verbose)"/>
+            <param name="performance_interval" value="$(arg performance_interval)"/>
+        </node>
+    </group>
+    
+    <!-- tb3_2 -->
+    <group if="$(arg test_tb3_2)">
+        <node pkg="tb3_distributed_control" 
+              type="test_clustering_analysis.py" 
+              name="clustering_tester_tb3_2" 
+              output="screen">
+            <param name="robot_id" value="2"/>
+            <param name="visualize" value="$(arg visualize)"/>
+            <param name="verbose" value="$(arg verbose)"/>
+            <param name="performance_interval" value="$(arg performance_interval)"/>
+        </node>
+    </group>
+    
+    <!-- tb3_3 -->
+    <group if="$(arg test_tb3_3)">
+        <node pkg="tb3_distributed_control" 
+              type="test_clustering_analysis.py" 
+              name="clustering_tester_tb3_3" 
+              output="screen">
+            <param name="robot_id" value="3"/>
+            <param name="visualize" value="$(arg visualize)"/>
+            <param name="verbose" value="$(arg verbose)"/>
+            <param name="performance_interval" value="$(arg performance_interval)"/>
+        </node>
+    </group>
+    
+    <!-- tb3_4 -->
+    <group if="$(arg test_tb3_4)">
+        <node pkg="tb3_distributed_control" 
+              type="test_clustering_analysis.py" 
+              name="clustering_tester_tb3_4" 
+              output="screen">
+            <param name="robot_id" value="4"/>
+            <param name="visualize" value="$(arg visualize)"/>
+            <param name="verbose" value="$(arg verbose)"/>
+            <param name="performance_interval" value="$(arg performance_interval)"/>
+        </node>
+    </group>
+    
+    <!-- 可选：启动RViz进行可视化 -->
+    <group if="$(arg visualize)">
+        <node pkg="rviz" 
+              type="rviz" 
+              name="clustering_rviz" 
+              args="-d $(find tb3_distributed_control)/laser/laser_data_cluster_analyse/version2/rviz/tb3_laser_data_cluster_analyse.rviz"
+              required="false"/>
+    </group>
+</launch>

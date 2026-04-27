@@ -1,0 +1,18 @@
+<launch>
+  <arg name="multi_robot_name" default=""/>
+  <arg name="set_lidar_frame_id" default="base_scan"/>
+  <arg name="model" default="$(env TURTLEBOT3_MODEL)" doc="model type [burger, waffle, waffle_pi]"/>
+
+  <include file="$(find turtlebot3_bringup)/launch/turtlebot3_robot.launch">
+    <arg name="multi_robot_name" value="$(arg multi_robot_name)"/>
+    <arg name="set_lidar_frame_id" value="$(arg multi_robot_name)/$(arg set_lidar_frame_id)"/>
+  </include>
+
+  <include file="$(find turtlebot3_rl_real)/launch/multi_turtlebot3_navigation.launch">
+    <arg name="multi_robot_name" value="$(arg multi_robot_name)"/>
+  </include>
+
+  <!-- 添加Python脚本节点，并传入multi_robot_name参数 -->
+  <node name="initial_localization" pkg="turtlebot3_rl_real" type="turtlebot3_initial_localization.py" output="screen" args="$(arg multi_robot_name)" />
+ 
+</launch>

@@ -1,0 +1,50 @@
+<launch>
+  <!-- Arguments -->
+  <arg name="multi_robot_name" default="" />
+  <arg name="model" default="$(env TURTLEBOT3_MODEL)" doc="model type [burger, waffle, waffle_pi]"/>
+  <arg name="map_file" default="$(find turtlebot3_rl_real)/maps/419_map.yaml"/>
+  <arg name="open_rviz" default="false"/>
+  <arg name="global_frame_id" default="map"/>
+ 
+  <arg name="tb3_x_pos" default=" 0.0"/>
+  <arg name="tb3_y_pos" default=" 0.0"/>
+  <arg name="tb3_z_pos" default=" 0.0"/>
+
+ 
+  <!-- Map server -->
+  <node name="$(arg multi_robot_name)_map_server" pkg="map_server" type="map_server" args="$(arg map_file)" >
+    <param name="frame_id" value="$(arg global_frame_id)" />
+  </node>
+ 
+  <include file="$(find turtlebot3_bringup)/launch/turtlebot3_remote.launch">
+      <arg name="model" value="$(arg model)" />
+      <arg name="multi_robot_name" value="$(arg multi_robot_name)" />
+  </include>
+
+  <!-- AMCL -->
+  <include file="$(find turtlebot3_rl_real)/launch/multi_amcl.launch" >
+    <arg name="initial_pose_x" default="$(arg tb3_x_pos)"/>
+    <arg name="initial_pose_y" default="$(arg tb3_y_pos)"/>
+    <arg name="initial_pose_a" default="$(arg tb3_z_pos)"/>
+    <arg name="odom_frame_id"   value="$(arg multi_robot_name)/odom"/>
+    <arg name="base_frame_id"   value="$(arg multi_robot_name)/base_footprint"/>
+    <arg name="global_frame_id" value="$(arg global_frame_id)"/>
+    <arg name="multi_robot_name" value="$(arg multi_robot_name)" />
+  </include>   
+  <!-- move_base -->
+  <include file="$(find turtlebot3_rl_real)/launch/multi_move_base.launch" >
+    <arg name="odom_frame_id"   value="$(arg multi_robot_name)/odom"/>
+    <arg name="base_frame_id"   value="$(arg multi_robot_name)/base_footprint"/>
+    <arg name="global_frame_id" value="$(arg global_frame_id)"/>
+    <arg name="scan_frame_id" value="$(arg multi_robot_name)/base_scan" />
+    <arg name="model" value="$(arg model)" />
+    <arg name="multi_robot_name" value="$(arg multi_robot_name)" />
+  </include>
+  
+  <!-- rviz
+  <group if="$(arg open_rviz)"> 
+    <node pkg="rviz" type="rviz" name="rviz" required="true"
+          args="-d $(find turtlebot3_navigation)/rviz/multi_turtlebot3_navigation.rviz"/>
+  </group>
+  -->
+</launch>

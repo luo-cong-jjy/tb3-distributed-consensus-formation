@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>tb3_distributed_control</name>
+  <version>1.0.0</version>
+  <description>Distributed control system for TurtleBot3 multi-robot consensus tracking</description>
+
+  <!-- Maintainer information -->
+  <maintainer email="user@example.com">User</maintainer>
+  
+  <!-- License -->
+  <license>MIT</license>
+
+  <!-- Build tool dependencies -->
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <!-- Build dependencies -->
+  <build_depend>rospy</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>nav_msgs</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>tf2_ros</build_depend>
+  <build_depend>tf2_geometry_msgs</build_depend>
+  <build_depend>message_generation</build_depend>
+
+  <!-- Runtime dependencies -->
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>tf2_geometry_msgs</exec_depend>
+  <exec_depend>message_runtime</exec_depend>
+  
+  <!-- Additional dependencies for TurtleBot3 -->
+  <exec_depend>turtlebot3_msgs</exec_depend>
+  <exec_depend>turtlebot3_bringup</exec_depend>
+  <exec_depend>turtlebot3_gazebo</exec_depend>
+
+  <!-- Export information -->
+  <export>
+  </export>
+</package>

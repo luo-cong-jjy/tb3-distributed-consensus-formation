@@ -1,0 +1,316 @@
+<launch>
+  <!-- ============================================== -->
+  <!-- 1. 全局参数配置（运行程序核心依赖） -->
+  <!-- ============================================== -->
+  <!-- 必须设置：所有节点使用 Gazebo 仿真时间（避免时间同步错误） -->
+  <param name="/use_sim_time" value="true" />
+  <!-- 日志级别配置（可选，方便调试：DEBUG/INFO/WARN/ERROR） -->
+  <param name="/rosconsole/log_level" value="INFO" />
+
+  <!-- 机器人模型参数（继承原有，确保一致） -->
+  <arg name="model" default="$(env TURTLEBOT3_MODEL)" doc="model type [burger, waffle, waffle_pi]"/>
+  <!-- 新增：系统总运行时间参数（可通过launch参数配置） -->
+  <arg name="total_time" default="32" doc="Total simulation time in seconds"/>
+  <!-- 新增：轨迹类型参数（可通过launch参数配置） -->
+  <arg name="trajectory_type" default="real_experiment_trajectory_line_improve" doc="Trajectory type: real_experiment_trajectory(实物轨迹),real_experiment_trajectory_line,eight/eight_slow_slow_slow, eight_slow_slow, eight_slow(8字形慢速), eight_fast(8字形快速), circle(圆形), line(直线)"/>
+  <!-- 新增：真实机器人控制参数 -->
+  <arg name="enable_real_robot" default="false" doc="Enable real robot control"/>
+  <arg name="real_robot_name" default="tb3_real" doc="Real robot name for cmd_vel topic"/>
+  <!-- 新增：rviz可视化参数 -->
+  <arg name="open_rviz" default="true" doc="Open RViz for visualization"/>
+  <!-- 新增：虚拟领导者命名空间参数 -->
+  <arg name="virtual_leader_ns" default="tb3_virtual_leader" doc="Virtual leader namespace"/>
+  <!-- 新增：LiDAR类型参数 -->
+  <arg name="lidar_type" default="LDS-01" doc="LiDAR type: LDS-01 (simulation) or LDS-01 LDS-02   (real robot)"/>
+  <arg name="first_tb3"  default="tb3_0"/>
+  <arg name="second_tb3" default="tb3_1"/>
+  <arg name="third_tb3"  default="tb3_2"/>
+  <arg name="forth_tb3"  default="tb3_3"/>
+  <arg name="fifth_tb3"  default="tb3_4"/>
+
+  <!-- 全局坐标系变换：将odom连接到world坐标系 -->
+  <node pkg="tf2_ros" type="static_transform_publisher" name="world_to_odom_global"
+        args="0 0 0 0 0 0 world odom" />
+
+  <arg name="first_tb3_x_pos"  default=" 0.12 "/>
+  <arg name="first_tb3_y_pos"  default=" 0.40 "/>
+  <arg name="first_tb3_z_pos"  default=" 0.00 "/>
+  <arg name="first_tb3_yaw"    default=" 0.00 "/>
+
+  <arg name="second_tb3_x_pos" default="-0.30 "/>
+  <arg name="second_tb3_y_pos" default=" 0.25 "/>
+  <arg name="second_tb3_z_pos" default=" 0.00 "/>
+  <arg name="second_tb3_yaw"   default=" 0.00 "/>
+
+  <arg name="third_tb3_x_pos"  default="-0.30 "/>
+  <arg name="third_tb3_y_pos"  default="-0.25 "/>
+  <arg name="third_tb3_z_pos"  default=" 0.00 "/>
+  <arg name="third_tb3_yaw"    default=" 0.00 "/>
+
+  <arg name="forth_tb3_x_pos"  default=" 0.12 "/>
+  <arg name="forth_tb3_y_pos"  default="-0.40 "/>
+  <arg name="forth_tb3_z_pos"  default=" 0.00 "/>
+  <arg name="forth_tb3_yaw"    default=" 0.00 "/>
+
+  <arg name="fifth_tb3_x_pos"  default=" 0.40 "/>
+  <arg name="fifth_tb3_y_pos"  default=" 0.00 "/>
+  <arg name="fifth_tb3_z_pos"  default=" 0.00 "/>
+  <arg name="fifth_tb3_yaw"    default=" 0.00 "/>
+
+
+  <!-- ============================================== -->
+  <!-- 2. 核心环境启动（按顺序：先 Gazebo，再机器人） -->
+  <!-- ============================================== -->
+  <!-- 启动 Gazebo 仿真环境（延迟1秒确保加载完成） -->
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find tb3_distributed_control)/worlds/consensus_obstacle_real_experiment_line_improve.world"/>  <!-- Gazebo 仿真环境选择:1.空世界:consensus_empty.world,2.设置障碍物:consensus_obstacle.world -->
+    <arg name="paused" value="false"/>
+    <arg name="use_sim_time" value="true"/> <!-- 与全局一致 -->
+    <arg name="gui" value="true"/>
+    <arg name="headless" value="false"/>
+    <arg name="debug" value="false"/>
+  </include>
+
+  <!-- 生成5个机器人（保留原有配置，确保命名空间正确） -->
+  <group ns="$(arg first_tb3)">
+    <param name="robot_description" command="$(find xacro)/xacro --inorder $(find tb3_distributed_control)/urdf/turtlebot3_$(arg model).urdf.xacro" />
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
+      <param name="publish_frequency" type="double" value="50.0" />
+      <param name="tf_prefix" value="$(arg first_tb3)" />
+    </node>
+
+    <!-- 添加静态坐标变换：将机器人坐标系连接到全局坐标系 -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="$(arg first_tb3)_world_to_odom"
+          args="0 0 0 0 0 0 world $(arg first_tb3)/odom" />
+
+    <param name="tf_prefix" value="$(arg first_tb3)" />
+    <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" args="-urdf -model $(arg first_tb3) -x $(arg first_tb3_x_pos) -y $(arg first_tb3_y_pos) -z $(arg first_tb3_z_pos) -Y $(arg first_tb3_yaw) -param robot_description" />
+  </group>
+
+  <group ns="$(arg second_tb3)">
+    <param name="robot_description" command="$(find xacro)/xacro --inorder $(find tb3_distributed_control)/urdf/turtlebot3_$(arg model).urdf.xacro" />
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
+      <param name="publish_frequency" type="double" value="50.0" />
+      <param name="tf_prefix" value="$(arg second_tb3)" />
+    </node>
+
+    <!-- 添加静态坐标变换：将机器人坐标系连接到全局坐标系 -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="$(arg second_tb3)_world_to_odom"
+          args="0 0 0 0 0 0 world $(arg second_tb3)/odom" />
+
+    <param name="tf_prefix" value="$(arg second_tb3)" />
+    <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" args="-urdf -model $(arg second_tb3) -x $(arg second_tb3_x_pos) -y $(arg second_tb3_y_pos) -z $(arg second_tb3_z_pos) -Y $(arg second_tb3_yaw) -param robot_description" />
+  </group>
+
+  <group ns="$(arg third_tb3)">
+    <param name="robot_description" command="$(find xacro)/xacro --inorder $(find tb3_distributed_control)/urdf/turtlebot3_$(arg model).urdf.xacro" />
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
+      <param name="publish_frequency" type="double" value="50.0" />
+      <param name="tf_prefix" value="$(arg third_tb3)" />
+    </node>
+
+    <!-- 添加静态坐标变换：将机器人坐标系连接到全局坐标系 -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="$(arg third_tb3)_world_to_odom"
+          args="0 0 0 0 0 0 world $(arg third_tb3)/odom" />
+
+    <param name="tf_prefix" value="$(arg third_tb3)" />
+    <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" args="-urdf -model $(arg third_tb3) -x $(arg third_tb3_x_pos) -y $(arg third_tb3_y_pos) -z $(arg third_tb3_z_pos) -Y $(arg third_tb3_yaw) -param robot_description" />
+  </group>
+
+  <group ns="$(arg forth_tb3)">
+    <param name="robot_description" command="$(find xacro)/xacro --inorder $(find tb3_distributed_control)/urdf/turtlebot3_$(arg model).urdf.xacro" />
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
+      <param name="publish_frequency" type="double" value="50.0" />
+      <param name="tf_prefix" value="$(arg forth_tb3)" />
+    </node>
+
+    <!-- 添加静态坐标变换：将机器人坐标系连接到全局坐标系 -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="$(arg forth_tb3)_world_to_odom"
+          args="0 0 0 0 0 0 world $(arg forth_tb3)/odom" />
+
+    <param name="tf_prefix" value="$(arg forth_tb3)" />
+    <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" args="-urdf -model $(arg forth_tb3) -x $(arg forth_tb3_x_pos) -y $(arg forth_tb3_y_pos) -z $(arg forth_tb3_z_pos) -Y $(arg forth_tb3_yaw) -param robot_description" />
+  </group>
+
+  <group ns="$(arg fifth_tb3)">
+    <param name="robot_description" command="$(find xacro)/xacro --inorder $(find tb3_distributed_control)/urdf/turtlebot3_$(arg model).urdf.xacro" />
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
+      <param name="publish_frequency" type="double" value="50.0" />
+      <param name="tf_prefix" value="$(arg fifth_tb3)" />
+    </node>
+
+    <!-- 添加静态坐标变换：将机器人坐标系连接到全局坐标系 -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="$(arg fifth_tb3)_world_to_odom"
+          args="0 0 0 0 0 0 world $(arg fifth_tb3)/odom" />
+
+    <param name="tf_prefix" value="$(arg fifth_tb3)" />
+    <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" args="-urdf -model $(arg fifth_tb3) -x $(arg fifth_tb3_x_pos) -y $(arg fifth_tb3_y_pos) -z $(arg fifth_tb3_z_pos) -Y $(arg fifth_tb3_yaw) -param robot_description" />
+  </group>
+
+  <!-- 虚拟领导者机器人模型（仅用于RViz可视化，不在Gazebo中生成） -->
+  <group ns="$(arg virtual_leader_ns)">
+    <param name="robot_description" command="$(find xacro)/xacro --inorder $(find tb3_distributed_control)/urdf/turtlebot3_$(arg model).urdf.xacro" />
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
+      <param name="publish_frequency" type="double" value="50.0" />
+      <param name="tf_prefix" value="$(arg virtual_leader_ns)" />
+    </node>
+
+    <!-- 虚拟领导者TF变换（仅发布world到odom的静态变换，动态变换由leader_node.py发布） -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="$(arg virtual_leader_ns)_world_to_odom"
+          args="0 0 0 0 0 0 world $(arg virtual_leader_ns)/odom" output="screen">
+    </node>
+
+    <!-- 虚拟领导者轮子静态变换（因为虚拟领导者不需要动态轮子转动） -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="$(arg virtual_leader_ns)_wheel_left"
+          args="0.0 0.08 0.023 -1.57 0 0 $(arg virtual_leader_ns)/base_link $(arg virtual_leader_ns)/wheel_left_link" />
+    <node pkg="tf2_ros" type="static_transform_publisher" name="$(arg virtual_leader_ns)_wheel_right"
+          args="0.0 -0.08 0.023 -1.57 0 0 $(arg virtual_leader_ns)/base_link $(arg virtual_leader_ns)/wheel_right_link" />
+    
+    <!-- 注意：虚拟领导者不在Gazebo中生成模型，只用于RViz显示 -->
+  </group>
+
+  <!-- ============================================== -->
+  <!-- 3. 分布式控制节点（新时序设计） -->
+  <!-- 时序设计说明：
+       1. 控制节点先启动(2.6s) → 初始化、计算zx、发布状态
+       2. 领导者后启动(3.2s) → 控制节点已完成邻居通信，时间差0.6s
+       3. 代码中通过时钟偏移自动对齐，确保邻居数据新鲜度
+  --> 
+  <!-- ============================================== -->
+  <!-- 3.2 控制节点先启动（延迟2.6秒，给予时间进行初始化和邻居通信） -->
+  <node name="tb3_controller_0" 
+        pkg="tb3_distributed_control" 
+        type="tb3_controller_node_real.py" 
+        output="screen"
+        launch-prefix="bash -c 'sleep 2.6; $0 $@'"> <!-- 提前启动，完成初始化和邻居通信 -->
+    <param name="robot_id" value="0"/>  <!-- 对应 tb3_0 -->
+    <param name="lidar_type" value="$(arg lidar_type)"/>  <!-- LiDAR类型参数 -->
+  </node>
+  <node name="tb3_controller_1" 
+        pkg="tb3_distributed_control" 
+        type="tb3_controller_node_real.py" 
+        output="screen"
+        launch-prefix="bash -c 'sleep 2.6; $0 $@'">
+    <param name="robot_id" value="1"/>  <!-- 对应 tb3_1 -->
+    <param name="lidar_type" value="$(arg lidar_type)"/>  <!-- LiDAR类型参数 -->
+  </node>
+  <node name="tb3_controller_2" 
+        pkg="tb3_distributed_control" 
+        type="tb3_controller_node_real.py" 
+        output="screen"
+        launch-prefix="bash -c 'sleep 2.6; $0 $@'">
+    <param name="robot_id" value="2"/>  <!-- 对应 tb3_2 -->
+    <param name="lidar_type" value="$(arg lidar_type)"/>  <!-- LiDAR类型参数 -->
+  </node>
+  <node name="tb3_controller_3" 
+        pkg="tb3_distributed_control" 
+        type="tb3_controller_node_real.py" 
+        output="screen"
+        launch-prefix="bash -c 'sleep 2.6; $0 $@'">
+    <param name="robot_id" value="3"/>  <!-- 对应 tb3_3 -->
+    <param name="lidar_type" value="$(arg lidar_type)"/>  <!-- LiDAR类型参数 -->
+  </node>
+  <node name="tb3_controller_4" 
+        pkg="tb3_distributed_control" 
+        type="tb3_controller_node_real.py" 
+        output="screen"
+        launch-prefix="bash -c 'sleep 2.6; $0 $@'">
+    <param name="robot_id" value="4"/>  <!-- 对应 tb3_4 -->
+    <param name="lidar_type" value="$(arg lidar_type)"/>  <!-- LiDAR类型参数 -->
+  </node>
+
+  <!-- 3.3 虚拟领导者节点（控制节点初始化后再启动，延迟3.2秒） -->
+  <node name="leader_node" 
+        pkg="tb3_distributed_control" 
+        type="leader_node.py" 
+        output="screen"
+        launch-prefix="bash -c 'sleep 3.2; $0 $@'"
+        ns="$(arg virtual_leader_ns)"><!-- 使用虚拟领导者命名空间 -->
+    <param name="total_time" value="$(arg total_time)"/> <!-- 传递总时间参数 -->
+    <param name="trajectory_type" value="$(arg trajectory_type)"/> <!-- 传递轨迹类型参数 -->
+    <param name="enable_real_robot" value="$(arg enable_real_robot)"/> <!-- 启用真实机器人控制 -->
+    <param name="real_robot_name" value="$(arg real_robot_name)"/> <!-- 真实机器人名称 -->
+    <param name="virtual_leader_ns" value="$(arg virtual_leader_ns)"/> <!-- 虚拟领导者命名空间 -->
+    <param name="~leader_init_x" value="0.0"/> <!-- 领导者初始x - 节点私有参数 -->
+    <param name="~leader_init_y" value="0.0"/> <!-- 领导者初始y - 节点私有参数 -->
+    <param name="~leader_init_yaw" value="0.0"/> <!-- 领导者初始yaw - 节点私有参数 -->
+  </node>
+
+  <!-- 3.4 结果可视化节点（延迟3.5秒，确保控制节点已开始工作） -->
+  <node name="result_visualizer" 
+        pkg="tb3_distributed_control" 
+        type="visualize_results.py" 
+        output="screen"
+        launch-prefix="bash -c 'sleep 3.2; $0 $@'">
+  </node>
+
+  <!-- 3.5 分布式控制可视化节点（延迟4秒，确保所有机器人里程计数据可用） -->
+  <node name="distributed_control_visualizer" 
+        pkg="tb3_distributed_control" 
+        type="distributed_control_visualizer.py" 
+        output="screen"
+        launch-prefix="bash -c 'sleep 3.5; $0 $@'">
+  </node>
+
+  
+  <!-- 4. 运行状态提示（正确方式：用bash执行echo） -->
+  <node name="launch_notification1" 
+        pkg="tb3_distributed_control"  
+        type="print_notification.py"   
+        output="screen">
+      <param name="~text" value="==============================================" />
+  </node>
+
+  <!-- 提示2：启动成功 -->
+  <node name="launch_notification2" 
+        pkg="tb3_distributed_control" 
+        type="print_notification.py" 
+        output="screen">
+      <param name="~text" value="All nodes started successfully!" />
+  </node>
+
+  <!-- 提示3：Gazebo状态 -->
+  <node name="launch_notification3" 
+        pkg="tb3_distributed_control" 
+        type="print_notification.py" 
+        output="screen">
+      <param name="~text" value="1. Gazebo 仿真环境已启动（机器人编队中）" />
+  </node>
+
+  <!-- 提示4：运行时长 -->
+  <node name="launch_notification4" 
+        pkg="tb3_distributed_control" 
+        type="print_notification.py" 
+        output="screen">
+      <param name="~text" value="2. 程序运行 $(arg total_time) 秒后自动停止（无需Ctrl+C）" />
+  </node>
+
+  <!-- 提示5：结果路径 -->
+  <node name="launch_notification5" 
+        pkg="tb3_distributed_control" 
+        type="print_notification.py" 
+        output="screen">
+      <param name="~text" value="3. 停止后将自动生成轨迹图（保存路径：/tmp/turtlebot3_consensus_data）" />
+  </node>
+
+  <!-- 提示6：分隔线 -->
+  <node name="launch_notification6" 
+        pkg="tb3_distributed_control" 
+        type="print_notification.py" 
+        output="screen">
+      <param name="~text" value="==============================================" />
+  </node>
+
+  <!-- ============================================== -->
+  <!-- 5. RViz 可视化 (延迟5秒启动，确保所有节点就绪) -->
+  <!-- ============================================== -->
+  <group if="$(arg open_rviz)">
+    <node name="rviz" 
+          pkg="rviz" 
+          type="rviz" 
+          args="-d $(find tb3_distributed_control)/rviz/tb3_distributed_control.rviz"
+          launch-prefix="bash -c 'sleep 4; $0 $@'"
+          output="screen" />
+  </group>
+  
+</launch>
